@@ -22,7 +22,7 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
 
-  // Clean the text to ensure consistent spacing, but KEEP punctuation and line breaks
+  // Sanitize text for display - ensure paragraphs are clean
   const textToType = useMemo(() => {
     return practiceText.content
       .split('\n')
@@ -46,7 +46,8 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
 
   useEffect(() => {
     if (!isPaused) {
-      inputRef.current?.focus();
+      const focusTimer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(focusTimer);
     }
   }, [isPaused]);
 
@@ -72,8 +73,9 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
   };
 
   const finishPractice = (finalInput: string) => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setIsStarted(false);
-    const end = Date.now();
+    
     const duration = elapsedTime;
     let correctChars = 0;
     for (let i = 0; i < finalInput.length; i++) {
@@ -88,94 +90,81 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
       wpm: Math.round(wpm),
       accuracy: Math.round(accuracy),
       duration: Math.round(duration),
-      timestamp: end,
+      timestamp: Date.now(),
     });
   };
 
-  const getStats = () => {
+  const stats = useMemo(() => {
     let correctCount = 0;
-    const mistakes: ErrorLog[] = [];
-    
     for(let i=0; i < input.length; i++) {
-      if (input[i] === textToType[i]) {
-        correctCount++;
-      }
+      if (input[i] === textToType[i]) correctCount++;
     }
-
-    // Rough WPM calculation
     const accuracy = input.length > 0 ? (correctCount / input.length) * 100 : 100;
     const wpm = elapsedTime > 0 ? (correctCount / 5) / (elapsedTime / 60) : 0;
-
     return {
       accuracy: Math.round(accuracy),
       wpm: Math.round(wpm),
-      correctChars: correctCount,
-      totalChars: input.length
+      correctChars: correctCount
     };
-  };
+  }, [input, textToType, elapsedTime]);
 
-  const stats = getStats();
-
-  // Rendering logic: We group by paragraph and word to prevent weird splits
   const renderContent = () => {
     let charIndexCounter = 0;
 
     return textToType.split('\n').map((paragraph, pIdx) => (
-      <div key={pIdx} className="mb-8 flex flex-wrap items-baseline gap-y-2">
-        {paragraph.split(/(?=\s)|(?<=\s)/g).map((wordOrSpace, wIdx) => {
-          // A word is a "unit" that should not be split across lines
-          return (
-            <span key={`${pIdx}-${wIdx}`} className="inline-block whitespace-nowrap">
-              {wordOrSpace.split('').map((char) => {
-                const globalIndex = charIndexCounter++;
-                let colorClass = "text-slate-300";
-                let decoration = "";
-                let displayText = char;
-                let hint = null;
+      <div key={pIdx} className="mb-12 flex flex-wrap items-baseline content-start text-justify">
+        {paragraph.split(/(?=\s)|(?<=\s)/g).map((wordOrSpace, wIdx) => (
+          <span key={`${pIdx}-${wIdx}`} className="inline-block whitespace-nowrap">
+            {wordOrSpace.split('').map((char) => {
+              const globalIndex = charIndexCounter++;
+              let colorClass = "text-slate-300";
+              let decoration = "";
+              let displayText = char;
+              let hint = null;
 
-                if (globalIndex < input.length) {
-                  if (input[globalIndex] === char) {
-                    colorClass = "text-slate-900 font-medium";
-                  } else {
-                    colorClass = "text-red-500 bg-red-50 ring-1 ring-red-200 rounded-sm";
-                    displayText = input[globalIndex] === ' ' ? '␣' : input[globalIndex];
-                    hint = (
-                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[12px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 shadow-sm z-10 whitespace-nowrap leading-none transition-all">
-                        {char === ' ' ? 'Space' : char}
-                      </span>
-                    );
-                  }
+              if (globalIndex < input.length) {
+                if (input[globalIndex] === char) {
+                  colorClass = "text-slate-900 font-medium";
+                } else {
+                  colorClass = "text-red-500 bg-red-50 ring-1 ring-red-200 rounded-[2px]";
+                  displayText = input[globalIndex] === ' ' ? '␣' : input[globalIndex];
+                  hint = (
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 text-[11px] font-black text-white bg-blue-600 px-2 py-1 rounded-lg shadow-lg z-50 whitespace-nowrap transition-all scale-100 animate-in fade-in zoom-in duration-200">
+                      {char === ' ' ? 'Space' : char}
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-blue-600"></span>
+                    </span>
+                  );
                 }
+              }
 
-                if (globalIndex === input.length && !isPaused) {
-                  decoration = "border-b-2 border-blue-600 animate-pulse";
-                }
+              if (globalIndex === input.length && !isPaused) {
+                decoration = "border-b-2 border-blue-600 animate-pulse";
+              }
 
-                return (
-                  <span 
-                    key={globalIndex} 
-                    className={`relative inline-block ${colorClass} ${decoration} transition-all duration-75 min-w-[0.55em] text-center`}
-                  >
-                    {hint}
-                    {displayText}
-                  </span>
-                );
-              })}
-            </span>
-          );
-        })}
+              return (
+                <span 
+                  key={globalIndex} 
+                  className={`relative inline-block ${colorClass} ${decoration} transition-all duration-75 min-w-[0.6em] text-center`}
+                >
+                  {hint}
+                  {displayText}
+                </span>
+              );
+            })}
+          </span>
+        ))}
       </div>
     ));
   };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
-      <header className="flex items-center justify-between px-10 py-5 border-b border-slate-100 bg-white/80 backdrop-blur-md z-30">
+      <header className="flex items-center justify-between px-10 py-5 border-b border-slate-100 bg-white/90 backdrop-blur-xl z-30 shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-100">
             <span className="text-white font-black text-lg">T</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-800 tracking-tight">{practiceText.title}</h2>
+          <h2 className="text-xl font-bold text-slate-800 tracking-tight max-w-[300px] truncate">{practiceText.title}</h2>
         </div>
 
         <div className="flex items-center gap-4">
@@ -205,20 +194,20 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
           onClick={() => inputRef.current?.focus()}
         >
           <div className="max-w-4xl mx-auto pt-10 pb-32">
-            <div className="bg-white p-16 rounded-[48px] shadow-sm border border-slate-200 min-h-[500px] relative">
-              <div className="text-2xl leading-[4rem] mono whitespace-pre-wrap select-none tracking-widest text-slate-300">
+            <div className="bg-white p-12 md:p-20 rounded-[48px] shadow-sm border border-slate-200 min-h-[500px] relative overflow-hidden">
+              <div className="text-3xl md:text-4xl leading-[4.5rem] md:leading-[5.5rem] mono whitespace-pre-wrap select-none tracking-widest text-slate-300">
                 {renderContent()}
               </div>
 
               {isPaused && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-[48px] backdrop-blur-sm z-40">
-                  <div className="text-center bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100">
-                    <p className="text-2xl font-black text-slate-800 mb-6">Session Paused</p>
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-[48px] backdrop-blur-md z-40 animate-in fade-in duration-300">
+                  <div className="text-center bg-white p-12 rounded-[40px] shadow-2xl border border-slate-100">
+                    <p className="text-3xl font-black text-slate-900 mb-8">Practice Paused</p>
                     <button 
                       onClick={() => setIsPaused(false)}
-                      className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition-all"
+                      className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-200"
                     >
-                      RESUME PRACTICE
+                      RESUME
                     </button>
                   </div>
                 </div>
@@ -227,7 +216,7 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
               <input
                 ref={inputRef}
                 type="text"
-                className="absolute top-0 left-0 w-0 h-0 opacity-0"
+                className="absolute top-0 left-0 w-0 h-0 opacity-0 pointer-events-none"
                 value={input}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
@@ -241,32 +230,33 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
           </div>
         </main>
 
-        <aside className="w-80 bg-white border-l border-slate-100 flex flex-col p-8 overflow-y-auto custom-scrollbar shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
+        <aside className="w-80 bg-white border-l border-slate-100 flex flex-col p-10 overflow-y-auto custom-scrollbar shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-2 mb-10">
              <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
-             <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Live Feedback</h3>
+             <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Stats</h3>
           </div>
           
-          <div className="space-y-8">
-            <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100/50 flex flex-col items-center">
-              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Current Speed</p>
-              <p className="text-5xl font-black mono text-blue-600 tracking-tighter">{stats.wpm} <span className="text-xs uppercase ml-1">WPM</span></p>
+          <div className="space-y-10">
+            <div className="bg-blue-50/50 p-8 rounded-[32px] border border-blue-100/50 flex flex-col items-center">
+              <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-2">WPM</p>
+              <p className="text-6xl font-black mono text-blue-600 tracking-tighter">{stats.wpm}</p>
             </div>
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col items-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Accuracy</p>
-              <p className="text-4xl font-black mono text-slate-800 tracking-tighter">{stats.accuracy}%</p>
+            
+            <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 flex flex-col items-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Accuracy</p>
+              <p className="text-5xl font-black mono text-slate-900 tracking-tighter">{stats.accuracy}<span className="text-xl">%</span></p>
             </div>
 
-            <div className="pt-4 space-y-4">
-              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-slate-400">
-                <span>Time</span>
-                <span className="text-slate-800 mono">
+            <div className="pt-6 space-y-5">
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <span>Timer</span>
+                <span className="text-slate-900 mono text-lg">
                    {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-slate-400">
-                <span>Mistakes</span>
-                <span className="text-red-500 mono">{input.length - stats.correctChars}</span>
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <span>Errors</span>
+                <span className="text-red-500 mono text-lg">{input.length - stats.correctChars}</span>
               </div>
             </div>
           </div>
