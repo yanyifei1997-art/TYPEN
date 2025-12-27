@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import InputSection from './components/FileUpload'; // Renamed internally but file still named FileUpload.tsx for now as requested by structure
+import React, { useState, useEffect, useCallback } from 'react';
+import InputSection from './components/FileUpload';
 import HistoryList from './components/HistoryList';
 import TypingArea from './components/TypingArea';
 import ResultModal from './components/ResultModal';
@@ -28,15 +28,15 @@ const App: React.FC = () => {
     localStorage.setItem('typen_saved_texts', JSON.stringify(savedTexts));
   }, [savedTexts]);
 
-  const handleUploadSuccess = (newText: TypingText) => {
+  const handleUploadSuccess = useCallback((newText: TypingText) => {
     setSavedTexts(prev => [newText, ...prev]);
-  };
+  }, []);
 
-  const handleSelectFromLibrary = (text: TypingText) => {
+  const handleSelectFromLibrary = useCallback((text: TypingText) => {
     setTextToSelect(text);
-  };
+  }, []);
 
-  const handleConfirmSelection = (selectedContent: string) => {
+  const handleConfirmSelection = useCallback((selectedContent: string) => {
     if (textToSelect) {
       setActivePracticeContent({
         id: textToSelect.id,
@@ -45,20 +45,20 @@ const App: React.FC = () => {
       });
       setTextToSelect(null);
     }
-  };
+  }, [textToSelect]);
 
-  const handleDeleteText = (id: string) => {
+  const handleDeleteText = useCallback((id: string) => {
     setSavedTexts(prev => prev.filter(t => t.id !== id));
-  };
+  }, []);
 
-  const handleFinishPractice = (result: PracticeResult) => {
+  const handleFinishPractice = useCallback((result: PracticeResult) => {
     setLastResult(result);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setLastResult(null);
     setActivePracticeContent(null);
-  };
+  }, []);
 
   if (activePracticeContent) {
     const mockText: TypingText = {
@@ -103,25 +103,25 @@ const App: React.FC = () => {
           </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900">Typen</h1>
         </div>
-        <p className="text-slate-500 text-lg max-w-xl">
-          High-performance English typing trainer. 
-          Upload PDF/Word or Paste text to start training.
+        <p className="text-slate-500 text-lg max-w-xl font-medium">
+          Professional English typing trainer. 
+          Upload PDF/Word or Paste text to begin.
         </p>
       </header>
 
       <main className="max-w-4xl mx-auto w-full space-y-20">
         <section>
           <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Exercise Source</h2>
-            <div className="h-[2px] flex-1 bg-slate-200 rounded-full"></div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Exercise Source</h2>
+            <div className="h-[1px] flex-1 bg-slate-200"></div>
           </div>
           <InputSection onUploadSuccess={handleUploadSuccess} />
         </section>
 
         <section>
           <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Recent Exercises</h2>
-            <div className="h-[2px] flex-1 bg-slate-200 rounded-full"></div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Library</h2>
+            <div className="h-[1px] flex-1 bg-slate-200"></div>
           </div>
           <HistoryList 
             texts={savedTexts} 
@@ -131,8 +131,8 @@ const App: React.FC = () => {
         </section>
       </main>
 
-      <footer className="mt-auto pt-20 pb-8 text-center text-slate-400 text-xs font-medium uppercase tracking-[0.2em]">
-        <p>© {new Date().getFullYear()} TYPEN. ALL RIGHTS RESERVED.</p>
+      <footer className="mt-auto pt-20 pb-8 text-center text-slate-300 text-[10px] font-bold uppercase tracking-[0.3em]">
+        <p>© {new Date().getFullYear()} TYPEN. HIGH-PERFORMANCE TRAINING.</p>
       </footer>
     </div>
   );

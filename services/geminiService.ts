@@ -1,7 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Strictly using process.env.API_KEY as per coding guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Standard cleanup for English typing text.
@@ -11,7 +12,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 export const cleanTypingText = (text: string): string => {
   return text
     // Replace non-standard whitespace/bullets/symbols with empty or spaces
-    .replace(/[·•\u00B7\u2022\u25CF\u25AA]/g, '')
+    .replace(/[·•\u00B7\u2022\u25CF\u25AA\u2023\u2043\u2027]/g, '')
     // Allow only: A-Z, a-z, 0-9, spaces, and . , : ; ! ? ' " ( ) - \n
     .replace(/[^a-zA-Z0-9\s.,:;!?'"()\-\n]/g, '')
     // Normalize spaces within lines
@@ -71,6 +72,6 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
     return cleanTypingText(rawText);
   } catch (error) {
     console.error("Error extracting text:", error);
-    throw new Error("Gemini could not parse this document. Please try converting it to a standard PDF or copying the text manually.");
+    throw new Error("Gemini could not parse this document. Please check your network or try converting it to a standard PDF.");
   }
 };
