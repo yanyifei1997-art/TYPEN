@@ -15,8 +15,14 @@ export const cleanTypingText = (text: string): string => {
 
 // Extract text from file using Gemini API
 export const extractTextFromFile = async (file: File): Promise<string> => {
-  // Use process.env.API_KEY directly as required by the system
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use process.env.API_KEY directly as mandated by Gemini API guidelines
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key is missing from the environment.");
+  }
+
+  // Initialize GoogleGenAI using the environment variable directly
+  const ai = new GoogleGenAI({ apiKey });
   
   const base64Data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -33,6 +39,7 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
   if (file.name.toLowerCase().endsWith('.docx')) mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
   try {
+    // Generate content using gemini-3-flash-preview for text extraction tasks
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
@@ -46,6 +53,7 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
       },
     });
 
+    // Access the generated text via the .text property (not a method)
     const cleaned = cleanTypingText(response.text || "");
     if (cleaned.length < 5) throw new Error("Could not extract enough text content.");
     return cleaned;

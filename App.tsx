@@ -18,14 +18,21 @@ const App: React.FC = () => {
   const STORAGE_KEY = 'typen_v2_store';
 
   useEffect(() => {
-    // Access process.env.API_KEY directly as required by the environment
+    // Hide the boot loader from index.html
+    const loader = document.getElementById('boot-loader');
+    if (loader) {
+      loader.style.opacity = '0';
+      setTimeout(() => loader.remove(), 400);
+    }
+
+    // Safely check for process.env.API_KEY
     try {
-      if (!process.env.API_KEY) {
-        setInitError("API_KEY is missing. Document processing will be unavailable.");
+      const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : null;
+      if (!apiKey) {
+        setInitError("API_KEY is missing. Document extraction will not work.");
       }
     } catch (e) {
-      console.warn("process.env check caught error", e);
-      setInitError("Environment initialization error.");
+      console.warn("API Key check skipped due to environment limits.");
     }
 
     try {
@@ -35,7 +42,7 @@ const App: React.FC = () => {
         if (Array.isArray(parsed)) setSavedTexts(parsed);
       }
     } catch (e) {
-      console.warn("Storage recovery failed.");
+      console.warn("Local storage retrieval failed.");
     }
     setIsReady(true);
   }, []);
@@ -118,7 +125,12 @@ const App: React.FC = () => {
           <h1 className="text-6xl font-black tracking-tighter text-slate-900">Typen</h1>
         </div>
         <p className="text-slate-500 text-xl max-w-xl font-semibold">Master English Typing with AI</p>
-        {initError && <p className="mt-4 text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-xl">{initError}</p>}
+        {initError && (
+          <div className="mt-6 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs font-bold flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {initError}
+          </div>
+        )}
       </header>
 
       <main className="max-w-4xl mx-auto w-full space-y-28 flex-grow">
