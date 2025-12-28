@@ -1,7 +1,12 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App.tsx';
+
+// Immediately hide the boot loader as soon as index.tsx execution begins
+if (typeof (window as any).hideLoader === 'function') {
+  (window as any).hideLoader();
+}
 
 interface Props {
   children?: ReactNode;
@@ -12,14 +17,14 @@ interface State {
   error: Error | null;
 }
 
-/**
- * ErrorBoundary component catches rendering errors.
- * Explicitly using 'Component' from react and properly typing state/props to fix TS errors.
- */
+// Fixed ErrorBoundary by ensuring inheritance from Component correctly uses Props and State generics
 class ErrorBoundary extends Component<Props, State> {
-  // Initialize state in constructor to ensure 'this.state' is recognized by TypeScript
+  // Explicitly declare state property to resolve TypeScript "property does not exist" errors
+  public state: State;
+
   constructor(props: Props) {
     super(props);
+    // Initialize state within the constructor as per React class component standards
     this.state = {
       hasError: false,
       error: null
@@ -35,14 +40,14 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
-    // Correctly accessing state and props from the Component base class
+    // Correctly accessing state and props which are now properly typed via generics
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
           <div className="max-w-md w-full bg-white p-10 rounded-[40px] shadow-2xl text-center border border-red-100">
             <h1 className="text-2xl font-black text-slate-900 mb-4">Application Error</h1>
             <p className="text-slate-500 text-sm mb-8 leading-relaxed">
-              {this.state.error?.message || "An unexpected error occurred."}
+              {this.state.error?.message || "An unexpected error occurred during initialization."}
             </p>
             <button 
               onClick={() => window.location.reload()}
@@ -55,7 +60,6 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // children is safely accessed via this.props
     return this.props.children;
   }
 }

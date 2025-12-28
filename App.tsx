@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import InputSection from './components/FileUpload';
 import HistoryList from './components/HistoryList';
@@ -11,7 +12,6 @@ const App: React.FC = () => {
   const [textToSelect, setTextToSelect] = useState<TypingText | null>(null);
   const [activePracticeContent, setActivePracticeContent] = useState<{title: string, content: string, id: string} | null>(null);
   const [lastResult, setLastResult] = useState<PracticeResult | null>(null);
-  const [initError, setInitError] = useState<string | null>(null);
 
   const STORAGE_KEY = 'typen_v2_store';
 
@@ -32,15 +32,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.warn("Local storage retrieval failed.");
     }
-
-    // 3. Check for API key presence (informational only)
-    try {
-      if (!process.env.API_KEY) {
-        setInitError("API_KEY is not configured. File analysis will be unavailable.");
-      }
-    } catch (e) {
-      console.error("Critical environment error during initialization.");
-    }
+    // Removed API key presence check to comply with external management policies
   }, []);
 
   // Save updates to storage
@@ -119,13 +111,6 @@ const App: React.FC = () => {
           <h1 className="text-6xl font-black tracking-tighter text-slate-900">Typen</h1>
         </div>
         <p className="text-slate-500 text-xl max-w-xl font-semibold">Master English Typing with AI</p>
-        
-        {initError && (
-          <div className="mt-6 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            System Status: {initError}
-          </div>
-        )}
       </header>
 
       <main className="max-w-4xl mx-auto w-full space-y-28 flex-grow">

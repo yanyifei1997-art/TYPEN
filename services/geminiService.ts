@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 // Cleanup text for typing practice
@@ -14,14 +15,8 @@ export const cleanTypingText = (text: string): string => {
 
 // Extract text from file using Gemini API
 export const extractTextFromFile = async (file: File): Promise<string> => {
-  // Direct access as per system guidelines
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("Missing API Key. Please ensure the environment is configured correctly.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Always initialize with named parameter and direct process.env.API_KEY access
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const base64Data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -60,6 +55,7 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
       },
     });
 
+    // Extract text from response using the .text property directly
     const extractedText = response.text || "";
     const cleaned = cleanTypingText(extractedText);
     

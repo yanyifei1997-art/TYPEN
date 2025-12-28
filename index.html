@@ -7,10 +7,9 @@
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%232563eb%22/><text y=%22.9em%22 font-size=%2280%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 x=%2210%22>T</text></svg>">
 
-  <!-- Global Process Shim -->
+  <!-- Global Process Shim: Prevents "process is not defined" crashes -->
   <script>
-    window.process = { env: { API_KEY: "" } };
-    // This function will be called by App.tsx to hide the loader
+    window.process = window.process || { env: { API_KEY: "" } };
     window.hideLoader = function() {
       const loader = document.getElementById('boot-loader');
       if (loader) {
@@ -18,6 +17,14 @@
         setTimeout(() => loader.remove(), 500);
       }
     };
+    // Safety net: If JS fails to initialize, clear the loader after 4 seconds
+    setTimeout(() => {
+      const loader = document.getElementById('boot-loader');
+      if (loader && loader.style.opacity !== '0') {
+        console.warn('Initialization taking longer than expected. Clearing loader...');
+        window.hideLoader();
+      }
+    }, 4000);
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -85,7 +92,7 @@
   <div id="root"></div>
   <div class="initial-loader" id="boot-loader">
     <div class="spinner"></div>
-    <p style="margin-top: 20px; font-weight: 900; color: #1e293b; letter-spacing: 0.1em; font-size: 12px; font-family: sans-serif;">INITIALIZING TYPEN</p>
+    <p style="margin-top: 20px; font-weight: 900; color: #1e293b; letter-spacing: 0.1em; font-size: 11px; font-family: sans-serif;">LOADING ENGINE</p>
   </div>
   <script type="module" src="./index.tsx"></script>
 </body>
