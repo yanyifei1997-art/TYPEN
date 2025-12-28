@@ -15,13 +15,25 @@ const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
 
-  const STORAGE_KEY = 'typen_v1_store';
+  const STORAGE_KEY = 'typen_v2_store';
 
   useEffect(() => {
-    // Basic runtime check for required environment variable
-    if (!process.env.API_KEY) {
-      setInitError("Environment error: API_KEY is required for document analysis.");
-      return;
+    // 极其安全的环境变量检查，防止 process.env 访问崩溃
+    const checkApiKey = () => {
+      try {
+        const apiKey = (window as any).process?.env?.API_KEY;
+        if (!apiKey || apiKey === 'undefined') {
+          return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    if (!checkApiKey()) {
+      setInitError("API_KEY 缺失。请在环境配置中设置 API_KEY 以使用 AI 文档识别功能。");
+      // 不直接 return，允许程序继续运行以进入错误 UI
     }
 
     try {
@@ -32,8 +44,7 @@ const App: React.FC = () => {
       }
       setIsReady(true);
     } catch (e) {
-      console.warn("Storage reset due to corruption.");
-      localStorage.removeItem(STORAGE_KEY);
+      console.warn("Storage recovery failed, starting fresh.");
       setIsReady(true);
     }
   }, []);
@@ -83,9 +94,9 @@ const App: React.FC = () => {
           <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-4">Setup Required</h2>
+          <h2 className="text-2xl font-black text-slate-900 mb-4">配置错误</h2>
           <p className="text-slate-500 text-sm mb-10 leading-relaxed font-medium">{initError}</p>
-          <button onClick={() => window.location.reload()} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl shadow-slate-100">RETRY</button>
+          <button onClick={() => window.location.reload()} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100">重试</button>
         </div>
       </div>
     );
@@ -130,7 +141,7 @@ const App: React.FC = () => {
           </div>
           <h1 className="text-6xl font-black tracking-tighter text-slate-900">Typen</h1>
         </div>
-        <p className="text-slate-500 text-xl max-w-xl font-semibold">Premium Training Architecture</p>
+        <p className="text-slate-500 text-xl max-w-xl font-semibold">极致流畅的英文打字训练场</p>
       </header>
 
       <main className="max-w-4xl mx-auto w-full space-y-28 flex-grow">
@@ -138,9 +149,9 @@ const App: React.FC = () => {
         
         <section>
           <div className="flex items-center justify-between mb-12">
-            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-900">Library</h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-900">学习资源库</h2>
             <div className="h-px flex-1 bg-slate-200 mx-6"></div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{savedTexts.length} Units</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{savedTexts.length} 个单元</span>
           </div>
           <HistoryList texts={savedTexts} onSelect={handleSelectFromLibrary} onDelete={handleDeleteText} />
         </section>
