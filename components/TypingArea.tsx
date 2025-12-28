@@ -2,11 +2,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TypingText, PracticeResult } from '../types';
 
-interface ErrorLog {
-  expected: string;
-  actual: string;
-  index: number;
-}
+// Safe ID generation helper
+const generateId = () => {
+  try {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  } catch (e) {
+    return Date.now().toString(36) + Math.random().toString(16);
+  }
+};
 
 interface TypingAreaProps {
   practiceText: TypingText;
@@ -22,7 +28,6 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
 
-  // Sanitize text for display - ensure paragraphs are clean
   const textToType = useMemo(() => {
     return practiceText.content
       .split('\n')
@@ -85,7 +90,7 @@ const TypingArea: React.FC<TypingAreaProps> = ({ practiceText, onFinish, onExit 
     const wpm = duration > 0 ? (correctChars / 5) / (duration / 60) : 0;
 
     onFinish({
-      id: crypto.randomUUID(),
+      id: generateId(),
       textId: practiceText.id,
       wpm: Math.round(wpm),
       accuracy: Math.round(accuracy),
