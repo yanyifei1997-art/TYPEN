@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,12 +7,19 @@
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%232563eb%22/><text y=%22.9em%22 font-size=%2280%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 x=%2210%22>T</text></svg>">
 
-  <!-- 1. Global Shim: Prevents "process is not defined" from crashing the script -->
+  <!-- Global Process Shim -->
   <script>
-    window.process = window.process || { env: {} };
+    window.process = { env: { API_KEY: "" } };
+    // This function will be called by App.tsx to hide the loader
+    window.hideLoader = function() {
+      const loader = document.getElementById('boot-loader');
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.remove(), 500);
+      }
+    };
   </script>
 
-  <!-- 2. Tailwind Configuration -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -38,26 +44,26 @@
       background-color: #f8fafc;
       margin: 0;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    
     .initial-loader {
       position: fixed;
       inset: 0;
       background: white;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 100;
-      transition: opacity 0.4s ease-out;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
     }
     .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #f1f5f9;
+      width: 48px;
+      height: 48px;
+      border: 4px solid #f1f5f9;
       border-top-color: #2563eb;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -76,10 +82,11 @@
 </script>
 </head>
 <body>
-  <div id="root">
-    <div class="initial-loader" id="boot-loader">
-      <div class="spinner"></div>
-    </div>
+  <div id="root"></div>
+  <div class="initial-loader" id="boot-loader">
+    <div class="spinner"></div>
+    <p style="margin-top: 20px; font-weight: 900; color: #1e293b; letter-spacing: 0.1em; font-size: 12px; font-family: sans-serif;">INITIALIZING TYPEN</p>
   </div>
+  <script type="module" src="./index.tsx"></script>
 </body>
 </html>

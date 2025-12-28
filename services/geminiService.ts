@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 // Cleanup text for typing practice
@@ -15,37 +14,45 @@ export const cleanTypingText = (text: string): string => {
 
 // Extract text from file using Gemini API
 export const extractTextFromFile = async (file: File): Promise<string> => {
-  // Use process.env.API_KEY directly as mandated by Gemini API guidelines
+  // Direct access as per system guidelines
   const apiKey = process.env.API_KEY;
+  
   if (!apiKey) {
-    throw new Error("API Key is missing from the environment.");
+    throw new Error("Missing API Key. Please ensure the environment is configured correctly.");
   }
 
-  // Initialize GoogleGenAI using the environment variable directly
   const ai = new GoogleGenAI({ apiKey });
   
   const base64Data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      if (result?.includes(',')) resolve(result.split(',')[1]);
-      else reject(new Error("File conversion failed."));
+      if (result && result.includes(',')) {
+        resolve(result.split(',')[1]);
+      } else {
+        reject(new Error("Empty or invalid file data."));
+      }
     };
-    reader.onerror = () => reject(new Error("Failed to read the file."));
+    reader.onerror = () => reject(new Error("File reader error."));
     reader.readAsDataURL(file);
   });
 
   let mimeType = file.type || 'application/pdf';
-  if (file.name.toLowerCase().endsWith('.docx')) mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const fileNameLower = file.name.toLowerCase();
+  
+  if (fileNameLower.endsWith('.docx')) {
+    mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  } else if (fileNameLower.endsWith('.doc')) {
+    mimeType = 'application/msword';
+  }
 
   try {
-    // Generate content using gemini-3-flash-preview for text extraction tasks
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType: mimeType } },
-          { text: "Extract English text for typing practice. Return ONLY the text, maintain paragraphs." },
+          { text: "Extract all English text from this document for a typing practice exercise. Remove headers, footers, and page numbers. Format with clean paragraphs. Return ONLY the extracted text." },
         ],
       },
       config: { 
@@ -53,11 +60,16 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
       },
     });
 
-    // Access the generated text via the .text property (not a method)
-    const cleaned = cleanTypingText(response.text || "");
-    if (cleaned.length < 5) throw new Error("Could not extract enough text content.");
+    const extractedText = response.text || "";
+    const cleaned = cleanTypingText(extractedText);
+    
+    if (cleaned.length < 10) {
+      throw new Error("Extraction failed: Text content too sparse or invalid.");
+    }
+    
     return cleaned;
   } catch (error: any) {
-    throw new Error(error.message || "AI Extraction service failed.");
+    console.error("Gemini Extraction Error:", error);
+    throw new Error(error.message || "The AI document processor encountered an error.");
   }
 };

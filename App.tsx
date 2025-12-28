@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import InputSection from './components/FileUpload';
 import HistoryList from './components/HistoryList';
@@ -12,29 +11,18 @@ const App: React.FC = () => {
   const [textToSelect, setTextToSelect] = useState<TypingText | null>(null);
   const [activePracticeContent, setActivePracticeContent] = useState<{title: string, content: string, id: string} | null>(null);
   const [lastResult, setLastResult] = useState<PracticeResult | null>(null);
-  const [isReady, setIsReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
 
   const STORAGE_KEY = 'typen_v2_store';
 
+  // Component initialization
   useEffect(() => {
-    // Hide the boot loader from index.html
-    const loader = document.getElementById('boot-loader');
-    if (loader) {
-      loader.style.opacity = '0';
-      setTimeout(() => loader.remove(), 400);
+    // 1. Instantly hide the loader once React logic starts
+    if ((window as any).hideLoader) {
+      (window as any).hideLoader();
     }
 
-    // Safely check for process.env.API_KEY
-    try {
-      const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : null;
-      if (!apiKey) {
-        setInitError("API_KEY is missing. Document extraction will not work.");
-      }
-    } catch (e) {
-      console.warn("API Key check skipped due to environment limits.");
-    }
-
+    // 2. Load storage
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -44,14 +32,21 @@ const App: React.FC = () => {
     } catch (e) {
       console.warn("Local storage retrieval failed.");
     }
-    setIsReady(true);
+
+    // 3. Check for API key presence (informational only)
+    try {
+      if (!process.env.API_KEY) {
+        setInitError("API_KEY is not configured. File analysis will be unavailable.");
+      }
+    } catch (e) {
+      console.error("Critical environment error during initialization.");
+    }
   }, []);
 
+  // Save updates to storage
   useEffect(() => {
-    if (isReady) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
-    }
-  }, [savedTexts, isReady]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
+  }, [savedTexts]);
 
   const handleUploadSuccess = useCallback((newText: TypingText) => {
     setSavedTexts(prev => [newText, ...prev]);
@@ -85,8 +80,7 @@ const App: React.FC = () => {
     setActivePracticeContent(null);
   }, []);
 
-  if (!isReady) return null;
-
+  // State Views
   if (activePracticeContent) {
     return (
       <div className="min-h-screen bg-white text-slate-800 flex flex-col font-sans">
@@ -125,10 +119,11 @@ const App: React.FC = () => {
           <h1 className="text-6xl font-black tracking-tighter text-slate-900">Typen</h1>
         </div>
         <p className="text-slate-500 text-xl max-w-xl font-semibold">Master English Typing with AI</p>
+        
         {initError && (
-          <div className="mt-6 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs font-bold flex items-center gap-2">
+          <div className="mt-6 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            {initError}
+            System Status: {initError}
           </div>
         )}
       </header>
@@ -145,6 +140,10 @@ const App: React.FC = () => {
           <HistoryList texts={savedTexts} onSelect={handleSelectFromLibrary} onDelete={handleDeleteText} />
         </section>
       </main>
+
+      <footer className="mt-32 py-10 border-t border-slate-200 text-center">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Typen &copy; 2024</p>
+      </footer>
     </div>
   );
 };

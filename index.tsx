@@ -1,5 +1,5 @@
 
-import React, { ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
@@ -12,9 +12,12 @@ interface State {
   error: Error | null;
 }
 
-// Fixed ErrorBoundary to properly inherit from React.Component and resolve state/props access issues
-class ErrorBoundary extends React.Component<Props, State> {
-  // Properly initialize state in constructor to ensure 'this.state' is recognized by TypeScript
+/**
+ * ErrorBoundary component catches rendering errors.
+ * Explicitly using 'Component' from react and properly typing state/props to fix TS errors.
+ */
+class ErrorBoundary extends Component<Props, State> {
+  // Initialize state in constructor to ensure 'this.state' is recognized by TypeScript
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -32,6 +35,7 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   public render() {
+    // Correctly accessing state and props from the Component base class
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -51,7 +55,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // children is now safely accessed via this.props
+    // children is safely accessed via this.props
     return this.props.children;
   }
 }
